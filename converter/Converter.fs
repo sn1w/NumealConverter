@@ -23,20 +23,20 @@ module ConvertUtils =
     
     let private ParseChar(c : char) : ValueInfo option = 
         match c with
-        | '一' -> makeValue (1, 0) |> Some
-        | '二' -> makeValue (2, 0) |> Some
-        | '三' -> makeValue (3, 0) |> Some
-        | '四' -> makeValue (4, 0) |> Some
-        | '五' -> makeValue (5, 0) |> Some
-        | '六' -> makeValue (6, 0) |> Some
-        | '七' -> makeValue (7, 0) |> Some
-        | '八' -> makeValue (8, 0) |> Some
-        | '九' -> makeValue (9, 0) |> Some
-        | '〇' -> makeValue (0, 0) |> Some
-        | '十' -> makeValueWithF (0, 1, true) |> Some
+        | '１' | '一' | '壱' -> makeValue (1, 0) |> Some
+        | '２' | '二' | '弐' -> makeValue (2, 0) |> Some
+        | '３' | '三' | '参' -> makeValue (3, 0) |> Some
+        | '４' | '四' -> makeValue (4, 0) |> Some
+        | '５' | '五' | '伍' -> makeValue (5, 0) |> Some
+        | '６' | '六' -> makeValue (6, 0) |> Some
+        | '７' | '七' -> makeValue (7, 0) |> Some
+        | '８' | '八' -> makeValue (8, 0) |> Some
+        | '９' | '九' -> makeValue (9, 0) |> Some
+        | '０' | '〇' | '零' -> makeValue (0, 0) |> Some
+        | '十' | '拾' -> makeValueWithF (0, 1, true) |> Some
         | '百' -> makeValueWithF (0, 2, true) |> Some
         | '千' -> makeValueWithF (0, 3, true) |> Some
-        | '万' -> makeValueWithF (0, 4, true) |> Some
+        | '万' | '萬' -> makeValueWithF (0, 4, true) |> Some
         | '億' -> makeValueWithF (0, 8, true) |> Some
         | '兆' -> makeValueWithF (0, 12, true) |> Some
         | _ -> None
@@ -76,11 +76,14 @@ type Number (data : list<ValueInfo>) =
                 Some(new Number(setImpl(x, data)))
             else
                 let isErrorCase = maxDigit.digit > 3 && x.digit > 3
+                let needsBasePoint = x.digit < 4 && maxDigit.digit > 3 && not(x.value = 0)
                 let newDigit = 
                     if x.digit = 0 && maxDigit.overwrite = false then 
                         maxDigit.digit + 1 
                     else if isErrorCase then
                         maxDigit.digit + x.digit + 1
+                    else if needsBasePoint then
+                        (maxDigit.digit / 4) * 4
                     else
                         maxDigit.digit + x.digit in
                 let newInfo = ConvertUtils.makeValueWithF(x.value, newDigit, x.overwrite)
@@ -126,3 +129,22 @@ type Converter() =
             if Seq.isEmpty infos then String.Empty 
             else Calculate infos
         ParseImpl s
+    member this.ConvertWidth(s: string) : string =
+        let toWidth c =
+            match c with
+            | '1' -> '１'
+            | '2' -> '２'
+            | '3' -> '３'
+            | '4' -> '４'
+            | '5' -> '５'
+            | '6' -> '６'
+            | '7' -> '７'
+            | '8' -> '８'
+            | '9' -> '９'
+            | '0' -> '０'
+            | _ -> c
+        let small = this.Convert s in
+        small.ToCharArray()
+        |> Seq.map (fun x -> toWidth x)
+        |> Seq.fold (fun x y -> x + y.ToString()) ""
+
